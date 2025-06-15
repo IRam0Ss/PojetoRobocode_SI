@@ -108,7 +108,7 @@ public class WaveSurfer {
     // MUDANÇA: Avalia todos os pontos possíveis, mas guarda os melhores de cada lado separadamente
     for (int direction = -1; direction <= 1; direction += 2) { // direction -1 = horário, 1 = anti-horário
         for (int i = 0; i < 20; i++) { // Simula "passos" se afastando na órbita
-            double orbitAngle = angleToEnemy + (FasterCalcs.PI / 2 * direction) + (direction * Math.toRadians(i * 2));
+            double orbitAngle = angleToEnemy + (FasterCalcs.HALF_PI * direction) + (direction * Math.toRadians(i * 2));
             Point2D.Double testPoint = new Point2D.Double(
                     bot.getX() + FasterCalcs.sin(orbitAngle) * (i * 6),
                     bot.getY() + FasterCalcs.cos(orbitAngle) * (i * 6));
@@ -199,7 +199,7 @@ public class WaveSurfer {
         // Determina se devemos nos mover para frente ou para trás.
         // Se o ângulo para o destino estiver mais "atrás" do que "na frente", nos movemos de ré.
         double turnAngle = normalRelativeAngle(angleToDest - bot.getHeadingRadians());
-        int direction = (Math.abs(turnAngle) > FasterCalcs.PI / 2) ? -1 : 1;
+        int direction = (Math.abs(turnAngle) > FasterCalcs.HALF_PI) ? -1 : 1;
         
         // Se a direção for para trás, ajustamos o ângulo em 180 graus.
         if (direction == -1) {

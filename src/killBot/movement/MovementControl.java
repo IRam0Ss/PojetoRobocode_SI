@@ -20,6 +20,7 @@ public class MovementControl {
 
     private double lastDirection = 1; // usada para suavizar a evasao
     private int moveDirection = 1;
+    private int timeInDirection = 0;
 
     /**
      * Construtor da classe
@@ -56,8 +57,8 @@ public class MovementControl {
         double orbitDirection = this.lastDirection;
 
         // Simular um passo para cada lado da órbita para avaliar perigo de parede
-        double antiClockwiseAngle = angleToEnemy + (FasterCalcs.PI / 2);
-        double clockwiseAngle = angleToEnemy - (FasterCalcs.PI / 2);
+        double antiClockwiseAngle = angleToEnemy + (FasterCalcs.HALF_PI);
+        double clockwiseAngle = angleToEnemy - (FasterCalcs.HALF_PI);
 
         // Projeta posições futuras para avaliação de parede
         double antiClockwiseX = bot.getX()
@@ -78,7 +79,7 @@ public class MovementControl {
             orbitDirection = 1;
         }
 
-        double targetHeading = angleToEnemy + (FasterCalcs.PI / 2 * orbitDirection); // Ângulo para orbitar
+        double targetHeading = angleToEnemy + (FasterCalcs.HALF_PI * orbitDirection); // Ângulo para orbitar
 
         double headingAdjustment = 0;
         double closeEnoughThreshold = 200; // Margem para "distância ideal"
@@ -189,12 +190,12 @@ public class MovementControl {
             if (targetEnemy != null) {
                 double angleToEnemy = AuxiliarFunctions.absoluteBearing(bot.getX(), bot.getY(), targetEnemy.getX(),
                         targetEnemy.getY());
-                bot.setTurnRightRadians(normalRelativeAngle(angleToEnemy + FasterCalcs.PI / 2 - currentHeading)); // Gira
+                bot.setTurnRightRadians(normalRelativeAngle(angleToEnemy + FasterCalcs.HALF_PI - currentHeading)); // Gira
                 // perpendicular
                 System.out.println(
                         "MovementControl: Comandos de FUGA DE CONTATO: Back(INFINITO), TurnPerpendicular(90deg).");
             } else {
-                bot.setTurnRightRadians(normalRelativeAngle(FasterCalcs.PI / 2));
+                bot.setTurnRightRadians(normalRelativeAngle(FasterCalcs.HALF_PI));
                 System.out.println(
                         "MovementControl: Comandos de FUGA DE CONTATO: Back(INFINITO), TurnRight(90deg). (Sem alvo)");
             }
@@ -382,4 +383,27 @@ public class MovementControl {
         bot.setAhead(100);
     }
 
+    //Metodo para tentar resolver flicks que ele dava na hora da batalha
+    public void doOscillatingMovement() {
+        if (targetEnemy == null) {
+            doStandardMovement();
+            return;
+        }
+        timeInDirection++;
+
+        // A CADA 20 TICKS (ajuste este valor se necessário), inverte a direção.
+        // Isso evita a checagem sensível de 'getVelocity() == 0'.
+    if (timeInDirection > 20) {
+        moveDirection *= -1;
+        timeInDirection = 0;
+    }
+
+    double angleToEnemy = AuxiliarFunctions.absoluteBearing(bot.getX(), bot.getY(), targetEnemy.getX(), targetEnemy.getY());
+    double targetHeading = angleToEnemy + (FasterCalcs.HALF_PI);
+    double smoothedAngle = wallSmoothing(bot.getX(), bot.getY(), targetHeading, moveDirection);
+
+    bot.setTurnRightRadians(normalRelativeAngle(smoothedAngle - bot.getHeadingRadians()));
+    bot.setAhead(150 * moveDirection);
+
+    }
 }

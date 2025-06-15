@@ -83,6 +83,67 @@ public class Aimer {
     {
         if(gameData.enemyState == null) return;
 
+            double firePower = BulletPowerSelector.getBestPower(
+            gameData.myState.energy,
+            gameData.enemyState.energy,
+            gameData.myState.location.distance(gameData.enemyState.location),
+            hitTracker);
+
+        boolean isMovingLinearly = Math.abs(gameData.enemyState.velocity) > 4 && getAccelerationIndex() == 1;
+        if (isMovingLinearly == true) {
+        // --- INÍCIO DA MIRA PREDITIVA LINEAR ---
+            double bulletSpeed = 20 - (3 * firePower);
+
+            Point2D.Double myPos = gameData.myState.location;
+            Point2D.Double enemyPos = gameData.enemyState.location;
+            double enemyHeading = gameData.enemyState.heading;
+            double enemyVelocity = gameData.enemyState.velocity;
+
+            double absoluteBearing = FasterCalcs.atan2(enemyPos.x - myPos.x, enemyPos.y - myPos.y);
+            double distance = myPos.distance(enemyPos);
+            
+            double futureTime = 0;
+            Point2D.Double predictedPos = (Point2D.Double) enemyPos.clone();
+
+            // Itera para encontrar o ponto de interceptação
+            while ((++futureTime) * bulletSpeed < myPos.distance(predictedPos)) {
+                predictedPos.x = enemyPos.x + enemyVelocity * FasterCalcs.sin(enemyHeading) * futureTime;
+                predictedPos.y = enemyPos.y + enemyVelocity * FasterCalcs.cos(enemyHeading) * futureTime;
+
+                // Se o ponto previsto sair do campo, cancela a previsão
+                if (predictedPos.x < 18 || predictedPos.y < 18 ||
+                    predictedPos.x > robot.getBattleFieldWidth() - 18 ||
+                    predictedPos.y > robot.getBattleFieldHeight() - 18) {
+                    
+                    // Se a previsão falhar, volta para a mira padrão
+                    findBestGFAndShoot(); // Chama um método refatorado com a lógica original
+                    return;
+            }
+        }
+        
+        double theta = Utils.normalRelativeAngle(
+            FasterCalcs.atan2(predictedPos.x - myPos.x, predictedPos.y - myPos.y) - robot.getGunHeadingRadians()
+        );
+        
+        robot.setTurnGunRightRadians(theta);
+
+        if (robot.getGunHeat() == 0 && Math.abs(robot.getGunTurnRemainingRadians()) < Math.atan(36.0 / distance)) {
+            if (robot.setFireBullet(firePower) != null) {
+                waveManager.addWave(firePower);
+                hitTracker.logShotFired();
+            }
+        }
+        return; // Finaliza a execução para não usar a mira GF
+    }
+
+    // Se o alvo não for linear, usa a mira GuessFactor original.
+    findBestGFAndShoot();
+}
+
+/**
+ * Refatorei sua lógica de mira GF original para este método para evitar duplicação.
+ */
+    private void findBestGFAndShoot() {
         double bestGF = findBestGF();
         double firePower = BulletPowerSelector.getBestPower(
             gameData.myState.energy,
@@ -114,7 +175,7 @@ public class Aimer {
             }
         }
     }
-
+    
     private double findBestGF()
     {
         int distanceIndex = getDistanceIndex();

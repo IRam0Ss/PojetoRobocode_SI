@@ -8,9 +8,7 @@ public class Enemy {
     private double lastEnemyHeading;
     private double lastEnemyVelocity;
     private double lastEnemyEnergy;
-
     private long cTime; // tempo que foi escaneado o inimigo
-
     public Enemy(String enemyName) {
         this.enemyName = enemyName;
     }
