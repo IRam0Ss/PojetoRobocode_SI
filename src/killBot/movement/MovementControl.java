@@ -309,7 +309,7 @@ public class MovementControl {
      * @param direction direcao, frente/tras
      * @return o angulo para fazer o wallSmoothing
     */
-    private double wallSmoothing(double x, double y, double heading, int direction) {
+    public double wallSmoothing(double x, double y, double heading, int direction) {
         double angle = heading;
         double wallMargin = 40; // Margem de segurança
 

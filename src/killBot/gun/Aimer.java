@@ -1,5 +1,6 @@
 package killBot.gun;
 
+import killBot.data.BotState;
 import killBot.data.GameData;
 import robocode.AdvancedRobot;
 import robocode.util.Utils;
@@ -13,15 +14,16 @@ public class Aimer {
     private GameData gameData;
     private HitRateTracker hitTracker;
 
-    public static final int DISTANCE_BINS = 4;
-    public static final int VELOCITY_BINS = 3;
+    public static final int DISTANCE_BINS = 7;
+    public static final int VELOCITY_BINS = 5;
+    public static final int ACCEL_BINS = 3;
     public static final int GF_BINS = 47;
     public static final int zeroIndex = 23;
-    public static double[][][] BINS;
+    public static double[][][][] BINS;
 
     static
     {
-        BINS = new double[DISTANCE_BINS][VELOCITY_BINS][GF_BINS];
+        BINS = new double[DISTANCE_BINS][VELOCITY_BINS][ACCEL_BINS][GF_BINS];
     }
 
     public Aimer(AdvancedRobot robot, WaveManager waveManager, GameData gameData, HitRateTracker hitTracker) 
@@ -32,32 +34,63 @@ public class Aimer {
             this.hitTracker = hitTracker;
         }
     
-    private int getDistanceIndex()
-    {
+    private int getDistanceIndex() {
         double distance = gameData.myState.location.distance(gameData.enemyState.location);
-        if(distance < 200) return 0;
-        if(distance < 400) return 1;
-        if(distance < 600) return 2;
-        return 3;
+        // 0-120, 120-240, 240-360, 360-480, 480-600, 600-720, >720
+        int index = (int)(distance / 120);
+        if (index > 6) {
+            index = 6;
+        }
+        return index;
     }
 
-    private int getVelocityIndex()
-    {
-        double velocity = Math.abs(gameData.enemyState.velocity);
-        if(velocity < 2) return 0;
-        if(velocity < 6) return 1;
-        return 2;
+    private int getVelocityIndex() {
+        double velocity = Math.abs(gameData.enemyState.velocity); //
+        // 0, 1-2, 3-4, 5-6, 7-8
+        if (velocity < 1) return 0;
+        if (velocity < 3) return 1;
+        if (velocity < 5) return 2;
+        if (velocity < 7) return 3;
+        return 4;
     }
+
+    private int getAccelerationIndex() {
+        // Precisamos de pelo menos dois registros no histórico para calcular a aceleração
+        if (gameData.enemyHistory.size() > 1) { //
+            // Pega o estado atual e o anterior
+            BotState currentState = gameData.enemyState; //
+            BotState previousState = gameData.enemyHistory.get(1); // O estado de 1 tick atrás
+
+            double currentVelocity = Math.abs(currentState.velocity);
+            double previousVelocity = Math.abs(previousState.velocity);
+            
+            // Compara a mudança na velocidade
+            // Usamos uma pequena tolerância (0.1) para considerar a velocidade "constante"
+            if (currentVelocity > previousVelocity + 0.1) {
+                return 2; // Acelerando
+            } else if (currentVelocity < previousVelocity - 0.1) {
+                return 0; // Desacelerando
+            } else {
+                return 1; // Velocidade Constante
+            }
+        }
+        
+        // Caso não tenhamos histórico suficiente, retornamos "Constante" como padrão
+        return 1;
+}
 
     public void shoot()
     {
         if(gameData.enemyState == null) return;
 
         double bestGF = findBestGF();
-
-        double basePower = 1.5;
-        double baseSpeed = 20 - (3 * basePower);
-        double escapeAngle = FasterCalcs.asin(8.0 / baseSpeed);
+        double firePower = BulletPowerSelector.getBestPower(
+            gameData.myState.energy,
+            gameData.enemyState.energy,
+            gameData.myState.location.distance(gameData.enemyState.location),
+            hitTracker);
+        double bulletSpeed = 20 - (3 * firePower);
+        double escapeAngle = FasterCalcs.asin(8.0 / bulletSpeed);
 
         double absoluteBearing = FasterCalcs.atan2(
             gameData.enemyState.location.x - gameData.myState.location.x,
@@ -74,12 +107,6 @@ public class Aimer {
 
         if(robot.getGunHeat() == 0 && Math.abs(pointGun) < 0.02)
         {
-            double firePower = BulletPowerSelector.getBestPower(
-                gameData.myState.energy,
-                gameData.enemyState.energy,
-                gameData.myState.location.distance(gameData.enemyState.location),
-                hitTracker);
-
             if(robot.setFireBullet(firePower) != null)
             {
                 waveManager.addWave(firePower);
@@ -92,11 +119,12 @@ public class Aimer {
     {
         int distanceIndex = getDistanceIndex();
         int velocityIndex = getVelocityIndex();
+        int accelIndex = getAccelerationIndex();
         int bestIndex = zeroIndex;
 
         for(int i = 0; i < GF_BINS; i++)
         {
-            if(BINS[distanceIndex][velocityIndex][i] > BINS[distanceIndex][velocityIndex][bestIndex])
+            if(BINS[distanceIndex][velocityIndex][accelIndex][i] > BINS[distanceIndex][velocityIndex][accelIndex][bestIndex])
             {
                 bestIndex = i;
             }
@@ -105,24 +133,27 @@ public class Aimer {
         double bestGF = (double)(bestIndex - zeroIndex) / (double) zeroIndex;
 
         //Debug
+        // ... (O System.out.println de debug pode ser atualizado para incluir o accelIndex)
         System.out.println(
             "MIRA INFO [T:" + robot.getTime() + "]" +
-            " | Dist.Bin: " + distanceIndex + "| Dist.Enemy" + gameData.enemyState.location.distance(gameData.myState.location) +
-            " | Vel.Bin: " + velocityIndex + "| Vel.Enemy" + gameData.enemyState.velocity +
-            " | Best GF: " + String.format("%.2f", bestGF) +
-            " (Score: " + String.format("%.3f", BINS[distanceIndex][velocityIndex][bestIndex]) + ")"
+            " | D.Bin: " + distanceIndex +
+            " | V.Bin: " + velocityIndex +
+            " | A.Bin: " + accelIndex + // Novo debug
+            " | Best GF: " + String.format("%.2f", bestGF)
         );
 
         return bestGF;
     }
 
-    public void logSuccess(double GF)
-    {
-        int distanceIndex = getDistanceIndex();
-        int velocityIndex = getVelocityIndex();
-        int index = (int) Math.round((GF + 1.0) * zeroIndex);
-        BINS[distanceIndex][velocityIndex][index] += 1.0;
-    }
+public void logSuccess(double GF) {
+    int distanceIndex = getDistanceIndex();
+    int velocityIndex = getVelocityIndex();
+    int accelIndex = getAccelerationIndex(); 
+    
+    int index = (int) Math.round((GF * zeroIndex) + zeroIndex); 
+    
+    BINS[distanceIndex][velocityIndex][accelIndex][index] += 1.0;
+}
 
     public void onBulletHit(Point2D.Double impactLocation, double bulletPower)
     {
@@ -147,17 +178,15 @@ public class Aimer {
         System.out.println("ACERTO! GF = " + String.format("%.2f", guessFactor));
     }
 
-    public void decayBINS()
-    {
-        for(int i = 0; i < BINS.length; i++)
-        {
-            for(int j = 0; j < BINS[i].length; j++)
-            {
-                for(int k = 0; k < BINS[i][j].length; k++)
-                {
-                    BINS[i][j][k] *= 0.999;
+    public void decayBINS() {
+    for (int i = 0; i < DISTANCE_BINS; i++) {
+        for (int j = 0; j < VELOCITY_BINS; j++) {
+            for (int k = 0; k < ACCEL_BINS; k++) { // Novo laço para aceleração
+                for (int l = 0; l < GF_BINS; l++) {
+                    BINS[i][j][k][l] *= 0.999;
                 }
             }
         }
     }
+}
 }

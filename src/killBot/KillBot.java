@@ -55,6 +55,11 @@ public class KillBot extends AdvancedRobot{
             waveManager.updateWaves();
             aimer.shoot();
             aimer.decayBINS();
+
+            if (movementControl.handleWallProximity()) {
+                execute();
+                continue; // Pula para a próxima iteração do loop
+            }
             // Se estamos em modo de fuga, mas já nos afastamos o suficiente, desativa a flag
             if (inContactEvasion && targetEnemy != null &&
                     AuxiliarFunctions.getDistance(getX(), getY(), targetEnemy.getX(),
@@ -219,12 +224,26 @@ public class KillBot extends AdvancedRobot{
 
 
     public void onHitWall(HitWallEvent event) {
-
+        // Quando batemos na parede, o movimento para.
+    // A melhor maneira de "descolar" é reverter a direção do movimento.
+        out.println("BATEU NA PAREDE! Revertendo direção.");
+        
+        // Inverte a direção em MovementControl para que o próximo movimento seja na direção oposta
+        // Acessar e modificar lastDirection pode exigir um método setter em MovementControl se quiser manter o encapsulamento.
+        // Por simplicidade, vamos apenas comandar o robô para trás.
+        
+        double moveDirection = Math.signum(getVelocity());
+        if (moveDirection == 0) { // Se por acaso estava parado
+            moveDirection = 1; 
+        }
+        
+        // Anda para a direção oposta para descolar.
+        setBack(100 * moveDirection);
     }
 
-        public boolean isInContactEvasion() {
-        return this.inContactEvasion;
-    }
+            public boolean isInContactEvasion() {
+            return this.inContactEvasion;
+        }
 
     public void onHitRobot(HitRobotEvent e) {
         out.println("ROBÔ COLIDIU COM " + e.getName() + "! Bearing: "
