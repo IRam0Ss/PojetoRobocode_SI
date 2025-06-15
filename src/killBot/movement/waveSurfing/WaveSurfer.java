@@ -16,10 +16,9 @@ public class WaveSurfer {
     private ArrayList<BulletWave> activeWaves;
     private MovementControl movementControl;
 
-    // NOVO: Armazena a trajetória simulada da rota escolhida
+    
     private ArrayList<Point2D.Double> chosenPathPoints = new ArrayList<>();
-    // NOVO: Armazena as posições de impacto simuladas para a rota escolhida
-    private Point2D.Double chosenImpactPoint = null;
+    private Point2D.Double chosenImpactPoint = null; //coordenada de impacto 
 
     public static int[] STATS_BINS = new int[40];
 
@@ -86,6 +85,9 @@ public class WaveSurfer {
         return STATS_BINS[binIndex];
     }
 
+    /**
+     * Metodo que realiza a tecnica de movimentacao WaveSurfing
+    */
     public void doWaveSurfing() {
         System.out.println("\n--- WaveSurfer.doWaveSurfing() (MODO PREDITIVO v4.2 - Orbital) ---");
 

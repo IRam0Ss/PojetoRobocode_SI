@@ -32,7 +32,7 @@ public class MovementControl {
     }
 
     /**
-     * Metodo que executa a logica de movimentacao
+     * Metodo que executa a logica de movimentacao padrao sem tiros 
      */
     public void doStandardMovement() {
 
@@ -117,8 +117,7 @@ public class MovementControl {
         System.out.println("  Recebido: BestHeading=" + String.format("%.2f", Math.toDegrees(bestHeading))
                 + "deg, BestMoveDirection=" + bestMoveDirection);
 
-        if (handleWallProximity()) { // A lógica de parede ainda tem prioridade, pois
-            // uma emergência.
+        if (handleWallProximity()) { 
             System.out.println("  handleWallProximity ativado. doEvasiveMovement PAROU.");
             return;
         }
@@ -302,6 +301,14 @@ public class MovementControl {
         return targetEnemy;
     }
 
+    /**
+     * calcula o angulo para acompanhar a parede 
+     * @param x coordenada x
+     * @param y coordenada y
+     * @param heading angulo que ta apontando
+     * @param direction direcao, frente/tras
+     * @return o angulo para fazer o wallSmoothing
+    */
     private double wallSmoothing(double x, double y, double heading, int direction) {
         double angle = heading;
         double wallMargin = 40; // Margem de segurança
@@ -325,6 +332,13 @@ public class MovementControl {
                 && y > margin && y < bot.getBattleFieldHeight() - margin;
     }
 
+    /**
+     * MEtodo pra detectar se ta preso nas paredes
+     * @param bot o robo
+     * @param currentX a posicao x atual
+     * @param currentY a posicao y atual
+     * @return true se estiver perto, false se nao 
+    */
     public static boolean isBotStuckNearWall(AdvancedRobot bot, double currentX, double currentY) {
         double stuckWallMargin = 20; // Use a mesma margem da sua lógica de "travado" em handleWallProximity
         double botMargin = 18; // Raio do robô
@@ -339,7 +353,7 @@ public class MovementControl {
                 distToBottomEdge < stuckWallMargin || distToTopEdge < stuckWallMargin);
 
         // E a velocidade é quase zero?
-        return isActuallyStuck && (Math.abs(bot.getVelocity()) < 1.0); // Use 1.0 ou 0.5 para "quase parado"
+        return isActuallyStuck && (Math.abs(bot.getVelocity()) < 1.0); // Use 1.0 
     }
 
     public boolean isInContactEvasion() {

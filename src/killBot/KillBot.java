@@ -97,6 +97,7 @@ public class KillBot extends AdvancedRobot{
         }
     }
 
+
     public void onScannedRobot(ScannedRobotEvent e)
     {
         //chama a funcao de travar a mira assim que scaneia um robo
