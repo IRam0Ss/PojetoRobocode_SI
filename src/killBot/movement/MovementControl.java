@@ -98,9 +98,14 @@ public class MovementControl {
 
         double moveDistance = 400;
 
-        // Inverte a direção de movimento (para frente/trás) se o robô estiver parado.
-        if (Math.abs(bot.getVelocity()) < 0.1 && Math.abs(bot.getDistanceRemaining()) < 1) {
-            this.lastDirection *= -1;
+        // Incrementa nosso contador a cada turno
+        timeInDirection++;
+
+        // A cada 35 ticks, invertemos a direção.
+        // Isso torna a inversão uma ação planejada, e não uma reação.
+        // (Você pode ajustar o valor 35 se achar melhor).
+        if (timeInDirection > 35) {
+            doOscillatingMovement();
         }
         bot.setAhead(moveDistance * this.lastDirection);
     }
