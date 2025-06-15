@@ -32,6 +32,7 @@ public class KillBot extends AdvancedRobot{
 
     public void run()
     {
+        //inicializa todas as variaveis que precisam ser inicializadas
         gameData = new GameData(this);
         hitTracker = new HitRateTracker();
         radar = new RadarControl(this);
