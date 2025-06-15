@@ -2,6 +2,9 @@ package killBot.data;
 
 import robocode.*;
 import java.util.List;
+
+import killBot.utils.math.FasterCalcs;
+
 import java.util.ArrayList;
 import java.awt.geom.Point2D;
 
@@ -62,8 +65,8 @@ public class GameData {
     public static Point2D.Double project(Point2D.Double sourceLocation, double angle, double length)
     {
         return new Point2D.Double(
-            sourceLocation.x + Math.sin(angle) * length,
-            sourceLocation.y + Math.cos(angle) * length
+            sourceLocation.x + FasterCalcs.sin(angle) * length,
+            sourceLocation.y + FasterCalcs.cos(angle) * length
         );
     }
 

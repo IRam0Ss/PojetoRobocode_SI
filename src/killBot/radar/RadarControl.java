@@ -4,6 +4,8 @@ import robocode.*;
 import robocode.util.Utils;
 import java.awt.geom.Point2D;
 
+import killBot.utils.math.FasterCalcs;
+
 public class RadarControl {
 
     private AdvancedRobot robot; //robo
@@ -22,7 +24,7 @@ public class RadarControl {
     //calcula angulos absolutos
     private double absoluteBearing(Point2D.Double p1, Point2D.Double p2)
     {
-        return Math.toDegrees(Math.atan2(p2.x - p1.x, p2.y - p1.y));
+        return Math.toDegrees(FasterCalcs.atan2(p2.x - p1.x, p2.y - p1.y));
     }
 
     //calcula o angulo absuluto para o ultimo scan inimigo

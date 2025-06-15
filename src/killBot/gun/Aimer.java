@@ -5,6 +5,7 @@ import robocode.AdvancedRobot;
 import robocode.util.Utils;
 import java.awt.geom.Point2D;
 import killBot.data.Wave;
+import killBot.utils.math.FasterCalcs;
 
 public class Aimer {
     private AdvancedRobot robot;
@@ -56,9 +57,9 @@ public class Aimer {
 
         double basePower = 1.5;
         double baseSpeed = 20 - (3 * basePower);
-        double escapeAngle = Math.asin(8.0 / baseSpeed);
+        double escapeAngle = FasterCalcs.asin(8.0 / baseSpeed);
 
-        double absoluteBearing = Math.atan2(
+        double absoluteBearing = FasterCalcs.atan2(
             gameData.enemyState.location.x - gameData.myState.location.x,
             gameData.enemyState.location.y - gameData.myState.location.y
         );
@@ -132,10 +133,10 @@ public class Aimer {
         }
 
         double offsetAngle = Utils.normalRelativeAngle(
-            Math.atan2(impactLocation.x - hitWave.origin.x, impactLocation.y - hitWave.origin.y) - hitWave.absoluteBearing
+            FasterCalcs.atan2(impactLocation.x - hitWave.origin.x, impactLocation.y - hitWave.origin.y) - hitWave.absoluteBearing
         );
 
-        double escapeAngle = Math.asin(8.0 / hitWave.bulletSpeed);
+        double escapeAngle = FasterCalcs.asin(8.0 / hitWave.bulletSpeed);
         double guessFactor = (offsetAngle / escapeAngle * hitWave.direciton);
 
         guessFactor = Math.max(-1.0, Math.min(1.0, guessFactor));

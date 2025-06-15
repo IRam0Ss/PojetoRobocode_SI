@@ -6,6 +6,7 @@ import killBot.movement.waveSurfing.Enemy;
 import killBot.KillBot;
 import robocode.AdvancedRobot;
 import killBot.utils.math.AuxiliarFunctions;
+import killBot.utils.math.FasterCalcs;
 import killBot.utils.math.AuxiliarFunctions.RoboPhysics;
 
 public class MovementControl {
@@ -55,16 +56,18 @@ public class MovementControl {
         double orbitDirection = this.lastDirection;
 
         // Simular um passo para cada lado da órbita para avaliar perigo de parede
-        double antiClockwiseAngle = angleToEnemy + (Math.PI / 2);
-        double clockwiseAngle = angleToEnemy - (Math.PI / 2);
+        double antiClockwiseAngle = angleToEnemy + (FasterCalcs.PI / 2);
+        double clockwiseAngle = angleToEnemy - (FasterCalcs.PI / 2);
 
         // Projeta posições futuras para avaliação de parede
         double antiClockwiseX = bot.getX()
-                + AuxiliarFunctions.RoboPhysics.MAX_ROBOT_VELOCITY * Math.sin(antiClockwiseAngle);
+                + AuxiliarFunctions.RoboPhysics.MAX_ROBOT_VELOCITY * FasterCalcs.sin(antiClockwiseAngle);
         double antiClockwiseY = bot.getY()
-                + AuxiliarFunctions.RoboPhysics.MAX_ROBOT_VELOCITY * Math.cos(antiClockwiseAngle);
-        double clockwiseX = bot.getX() + AuxiliarFunctions.RoboPhysics.MAX_ROBOT_VELOCITY * Math.sin(clockwiseAngle);
-        double clockwiseY = bot.getY() + AuxiliarFunctions.RoboPhysics.MAX_ROBOT_VELOCITY * Math.cos(clockwiseAngle);
+                + AuxiliarFunctions.RoboPhysics.MAX_ROBOT_VELOCITY * FasterCalcs.cos(antiClockwiseAngle);
+        double clockwiseX = bot.getX()
+                + AuxiliarFunctions.RoboPhysics.MAX_ROBOT_VELOCITY * FasterCalcs.sin(clockwiseAngle);
+        double clockwiseY = bot.getY()
+                + AuxiliarFunctions.RoboPhysics.MAX_ROBOT_VELOCITY * FasterCalcs.cos(clockwiseAngle);
 
         double antiClockwiseWallDanger = getWallDanger(antiClockwiseX, antiClockwiseY);
         double clockwiseWallDanger = getWallDanger(clockwiseX, clockwiseY);
@@ -75,7 +78,7 @@ public class MovementControl {
             orbitDirection = 1;
         }
 
-        double targetHeading = angleToEnemy + (Math.PI / 2 * orbitDirection); // Ângulo para orbitar
+        double targetHeading = angleToEnemy + (FasterCalcs.PI / 2 * orbitDirection); // Ângulo para orbitar
 
         double headingAdjustment = 0;
         double closeEnoughThreshold = 200; // Margem para "distância ideal"
@@ -114,14 +117,11 @@ public class MovementControl {
         System.out.println("  Recebido: BestHeading=" + String.format("%.2f", Math.toDegrees(bestHeading))
                 + "deg, BestMoveDirection=" + bestMoveDirection);
 
-        /*
-         * if (handleWallProximity()) { // A lógica de parede ainda tem prioridade, pois
-         * é uma emergência.
-         * System.out.println("  handleWallProximity ativado. doEvasiveMovement PAROU."
-         * );
-         * return;
-         * }
-         */
+        if (handleWallProximity()) { // A lógica de parede ainda tem prioridade, pois
+            // uma emergência.
+            System.out.println("  handleWallProximity ativado. doEvasiveMovement PAROU.");
+            return;
+        }
 
         double currentHeading = bot.getHeadingRadians();
         double currentSpeed = bot.getVelocity();
@@ -190,12 +190,12 @@ public class MovementControl {
             if (targetEnemy != null) {
                 double angleToEnemy = AuxiliarFunctions.absoluteBearing(bot.getX(), bot.getY(), targetEnemy.getX(),
                         targetEnemy.getY());
-                bot.setTurnRightRadians(normalRelativeAngle(angleToEnemy + Math.PI / 2 - currentHeading)); // Gira
-                                                                                                           // perpendicular
+                bot.setTurnRightRadians(normalRelativeAngle(angleToEnemy + FasterCalcs.PI / 2 - currentHeading)); // Gira
+                // perpendicular
                 System.out.println(
                         "MovementControl: Comandos de FUGA DE CONTATO: Back(INFINITO), TurnPerpendicular(90deg).");
             } else {
-                bot.setTurnRightRadians(normalRelativeAngle(Math.PI / 2));
+                bot.setTurnRightRadians(normalRelativeAngle(FasterCalcs.PI / 2));
                 System.out.println(
                         "MovementControl: Comandos de FUGA DE CONTATO: Back(INFINITO), TurnRight(90deg). (Sem alvo)");
             }
@@ -219,10 +219,10 @@ public class MovementControl {
         double battleFieldHeight = bot.getBattleFieldHeight();
         double currentHeading = bot.getHeadingRadians();
 
-        double wallMargin = 120;
+        double wallMargin = 150;
 
-        double botMargin = 18;
-        double stuckInWallMargin = 20;
+        double botMargin = 20;
+        double stuckInWallMargin = 25;
 
         // Calcular a distância para cada parede
         double distToLeft = currentX - botMargin;
@@ -307,8 +307,8 @@ public class MovementControl {
         double wallMargin = 40; // Margem de segurança
 
         for (int i = 0; i < 100; i++) { // Tenta suavizar por até 100 iterações
-            double testX = x + Math.sin(angle) * 120;
-            double testY = y + Math.cos(angle) * 120;
+            double testX = x + FasterCalcs.sin(angle) * 120;
+            double testY = y + FasterCalcs.cos(angle) * 120;
 
             if (isSafe(testX, testY, wallMargin)) {
                 break;

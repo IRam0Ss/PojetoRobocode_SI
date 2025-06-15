@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import killBot.movement.MovementControl;
 import robocode.AdvancedRobot;
 import killBot.utils.math.AuxiliarFunctions;
+import killBot.utils.math.FasterCalcs;
 
 public class WaveSurfer {
 
     private AdvancedRobot bot;
     private ArrayList<BulletWave> activeWaves;
     private MovementControl movementControl;
-
 
     // NOVO: Armazena a trajetória simulada da rota escolhida
     private ArrayList<Point2D.Double> chosenPathPoints = new ArrayList<>();
@@ -46,8 +46,8 @@ public class WaveSurfer {
     public Point2D.Double getBulletFuturePosition(BulletWave wave, long futureTime) {
         double bulletDistanceTraveled = ((futureTime - wave.getFireTime())) * wave.getBulletSpeed();
 
-        double bulletX = wave.getOriginX() + bulletDistanceTraveled * Math.sin(wave.getDirectAngle());
-        double bulletY = wave.getOriginY() + bulletDistanceTraveled * Math.cos(wave.getDirectAngle());
+        double bulletX = wave.getOriginX() + bulletDistanceTraveled * FasterCalcs.sin(wave.getDirectAngle());
+        double bulletY = wave.getOriginY() + bulletDistanceTraveled * FasterCalcs.cos(wave.getDirectAngle());
 
         return new Point2D.Double(bulletX, bulletY);
     }
@@ -97,7 +97,7 @@ public class WaveSurfer {
         double bestDanger = Double.POSITIVE_INFINITY;
         Point2D.Double bestDestination = new Point2D.Double(bot.getX(), bot.getY());
 
-        // PASSO 1: Itera sobre todos os possíveis PONTOS DE DESTINO orbitando o
+        // Itera sobre todos os possíveis PONTOS DE DESTINO orbitando o
         // inimigo.
         for (BulletWave waveForReference : activeWaves) { // Pega uma onda como referência para a posição inimiga
             double angleToEnemy = AuxiliarFunctions.absoluteBearing(bot.getX(), bot.getY(),
@@ -109,29 +109,31 @@ public class WaveSurfer {
                 // Simula "passos" se afastando na órbita
                 for (int i = 0; i < 20; i++) {
 
-                    double orbitAngle = angleToEnemy + (Math.PI / 2 * direction) + (direction * Math.toRadians(i * 2));
+                    double orbitAngle = angleToEnemy + (FasterCalcs.PI / 2 * direction)
+                            + (direction * Math.toRadians(i * 2));
                     Point2D.Double testPoint = new Point2D.Double(
-                            bot.getX() + Math.sin(orbitAngle) * (i * 6),
-                            bot.getY() + Math.cos(orbitAngle) * (i * 6));
+                            bot.getX() + FasterCalcs.sin(orbitAngle) * (i * 6),
+                            bot.getY() + FasterCalcs.cos(orbitAngle) * (i * 6));
 
-                    // PASSO 2: CHECAGEM DE PAREDE
+                    // CHECAGEM DE PAREDE
                     if (testPoint.x < 18 || testPoint.y < 18 ||
                             testPoint.x > bot.getBattleFieldWidth() - 18 ||
                             testPoint.y > bot.getBattleFieldHeight() - 18) {
                         continue;
                     }
 
-                    // PASSO 3: Calcula o perigo SOMADO de TODAS as ondas para este ponto.
+                    //  Calcula o perigo SOMADO de TODAS as ondas para este ponto.
                     double totalDangerForThisPoint = 0;
                     for (BulletWave wave : activeWaves) {
                         double statisticalDanger = getDangerRating(wave, testPoint.x, testPoint.y);
                         double distanceToEnemy = testPoint.distance(wave.getOriginX(), wave.getOriginY());
-                        double idealDistance = 350.0;
+                        double idealDistance = 300.0;
                         double distancePenalty = Math.abs(distanceToEnemy - idealDistance) * 0.02;
-                        totalDangerForThisPoint += statisticalDanger + distancePenalty;
+                        double wallPenalty = calculateWallPenalty(testPoint.x, testPoint.y);
+                        totalDangerForThisPoint += statisticalDanger + distancePenalty + wallPenalty;
                     }
 
-                    // PASSO 4: Compara com o melhor que encontramos.
+                    // Compara com o melhor que encontramos.
                     if (totalDangerForThisPoint < bestDanger) {
                         bestDanger = totalDangerForThisPoint;
                         bestDestination = testPoint;
@@ -155,7 +157,6 @@ public class WaveSurfer {
                 String.format("%.0f", bestDestination.y) + "), Perigo Mínimo Total: " + bestDanger);
     }
 
-
     // Novos getters para os pontos de debug
     public ArrayList<Point2D.Double> getChosenPathPoints() {
         return chosenPathPoints;
@@ -165,20 +166,50 @@ public class WaveSurfer {
         return chosenImpactPoint;
     }
 
+    /**
+     * metodo para fazer o robo ir para uma direcao
+     * 
+     * @param destination coordenadas do destino
+     */
     private void goTo(Point2D.Double destination) {
         double angleToDest = AuxiliarFunctions.absoluteBearing(bot.getX(), bot.getY(), destination.x, destination.y);
         double turnAngle = normalRelativeAngle(angleToDest - bot.getHeadingRadians());
         double distance = AuxiliarFunctions.getDistance(bot.getX(), bot.getY(), destination.x, destination.y);
 
         // Vira na direção mais curta para o destino
-        if (Math.abs(turnAngle) > Math.PI / 2) {
-            turnAngle = normalRelativeAngle(turnAngle + Math.PI);
+        if (Math.abs(turnAngle) > FasterCalcs.PI / 2) {
+            turnAngle = normalRelativeAngle(turnAngle + FasterCalcs.PI);
             bot.setTurnRightRadians(turnAngle);
             bot.setBack(distance);
         } else {
             bot.setTurnRightRadians(turnAngle);
             bot.setAhead(distance);
         }
+    }
+
+    /**
+     * Calcula uma penalidade baseada na proximidade de um ponto com as paredes.
+     * Quanto mais perto, maior a penalidade.
+     * 
+     * @param x A coordenada X do ponto.
+     * @param y A coordenada Y do ponto.
+     * @return Um valor de penalidade.
+     */
+    private double calculateWallPenalty(double x, double y) {
+        // Define uma margem de segurança. Abaixo desta distância, a penalidade começa a
+        // ser aplicada.
+        double wallMargin = 60.0;
+        double penalty = 0.0;
+
+        // Calcula o quão "fundo" o ponto está dentro da margem de perigo de cada
+        // parede.
+        penalty += Math.max(0, wallMargin - x); // Parede esquerda
+        penalty += Math.max(0, wallMargin - y); // Parede de baixo
+        penalty += Math.max(0, bot.getBattleFieldWidth() - x - wallMargin); // Parede direita
+        penalty += Math.max(0, bot.getBattleFieldHeight() - y - wallMargin); // Parede de cima
+
+        // Multiplica por um fator de peso para ajustar a "fobia" de parede do robô.
+        return penalty * 0.08;
     }
 
 }

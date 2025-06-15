@@ -1,5 +1,7 @@
 package killBot.movement.waveSurfing;
 
+import killBot.utils.math.FasterCalcs;
+
 /**
  * Classe para o armazenamento dos dados dos tiros disparados
  */
@@ -40,7 +42,7 @@ public class BulletWave {
     }
 
     public double getMaxEscapeAngle() {
-        return Math.asin(8.0 / getBulletSpeed());
+        return FasterCalcs.asin(8.0 / getBulletSpeed());
     }
 
     // gets:

@@ -13,7 +13,7 @@ public class AuxiliarFunctions {
      * @return a distancia entre os pontos
      */
     public static double getDistance(double x1, double y1, double x2, double y2) {
-        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        return FasterCalcs.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
     }
 
     /**
@@ -26,7 +26,7 @@ public class AuxiliarFunctions {
      * @return o angulo absoluto entre os pontos.
      */
     public static double absoluteBearing(double x1, double y1, double x2, double y2) {
-        return Math.atan2(x2 - x1, y2 - y1);
+        return FasterCalcs.atan2(x2 - x1, y2 - y1);
     }
 
     /**

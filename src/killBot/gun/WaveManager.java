@@ -1,6 +1,7 @@
 package killBot.gun;
 
 import killBot.data.*;
+import killBot.utils.math.FasterCalcs;
 import robocode.AdvancedRobot;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class WaveManager {
         Point2D.Double myLocation = gameData.myState.location;
         Point2D.Double enemyLocation = gameData.enemyState.location;
 
-        double absoluteBearing = Math.atan2(
+        double absoluteBearing = FasterCalcs.atan2(
             enemyLocation.x - myLocation.x,
             enemyLocation.y - myLocation.y
         );

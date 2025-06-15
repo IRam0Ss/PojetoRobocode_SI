@@ -6,6 +6,7 @@ import killBot.gun.Aimer;
 import killBot.gun.HitRateTracker;
 import killBot.gun.WaveManager;
 import killBot.utils.math.AuxiliarFunctions;
+import killBot.utils.math.FasterCalcs;
 import killBot.data.GameData;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -115,14 +116,13 @@ public class KillBot extends AdvancedRobot{
         // Calcular a posicao do inimigo
 
         double absoluteBearingRadians = getHeadingRadians() + e.getBearingRadians();
-        double enemyX = getX() + e.getDistance() * Math.sin(absoluteBearingRadians);
-        double enemyY = getY() + e.getDistance() * Math.cos(absoluteBearingRadians);
+        double enemyX = getX() + e.getDistance() * FasterCalcs.sin(absoluteBearingRadians);
+        double enemyY = getY() + e.getDistance() * FasterCalcs.cos(absoluteBearingRadians);
 
         targetEnemy.updateEnemyData(enemyX, enemyY, e.getHeadingRadians(), e.getVelocity(), e.getEnergy(),
                 getTime());
 
-        // queda de energia = energia do scan anterior - energia do scan atual(ultima
-        // energia captada pelo scan)
+
         double energyDrop = oldEnergy - targetEnemy.getLastEnemyEnergy();
 
         if (energyDrop > 0.2 && energyDrop <= 3.0 && targetEnemy.getLastEnemyEnergy() > 0) {
@@ -164,8 +164,7 @@ public class KillBot extends AdvancedRobot{
         BulletWave hittingWave = null;
         double minDistance = Double.POSITIVE_INFINITY;
 
-        // 1. ACHA A ONDA "CULPADA"
-        // Encontra a onda que mais provavelmente nos atingiu, baseando-se no tempo
+        // Encontra a onda que mais provavelmente atingiu, baseando-se no tempo
         // de voo da bala.
         for (int i = activeWaves.size() - 1; i >= 0; i--) {
             BulletWave wave = activeWaves.get(i);
@@ -182,7 +181,7 @@ public class KillBot extends AdvancedRobot{
             }
         }
 
-        // 2. APRENDE COM A ONDA CULPADA (SE ELA FOI ENCONTRADA)
+        //  APRENDE COM A ONDA CULPADA 
         if (hittingWave != null) {
             out.println("  Analisando a onda que nos atingiu. FireTime=" + hittingWave.getFireTime());
 
@@ -204,7 +203,7 @@ public class KillBot extends AdvancedRobot{
             // Mapeia o GuessFactor (de -1 a 1) para um índice do nosso array (de 0 a 30).
             int binIndex = (int) Math.round(((guessFactor + 1) / 2) * (WaveSurfer.STATS_BINS.length - 1));
 
-            // ATUALIZA A ESTATÍSTICA: "O inimigo acertou um tiro neste 'bin'!"
+            // ATUALIZA A ESTATÍSTICA
             WaveSurfer.STATS_BINS[binIndex]++;
 
             out.println("  APRENDIZADO: Inimigo usou GuessFactor " + String.format("%.2f", guessFactor) +
